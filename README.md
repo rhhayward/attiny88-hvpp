@@ -19,9 +19,10 @@ device.
 Read the explanation in the .ino file, which gives all the wiring instructions.
 The only special wiring is that the 5v to the ATTINY88's VCC and the 12v to the
 RST pin are switched using a mosfet - explanation in the .ino file. You can
-also examine the `/kicad/attiny88-hvpp.kicad_sch` schematic to see that wiring
-in particular. Connect to the purple pi's USB Serial port - it will emit some
-help on start, and then commands can be issued.
+also examine the `/kicad/attiny88-hvpp.kicad_sch` schematic 
+(https://kicanvas.org/?github=https%3A%2F%2Fgithub.com%2Frhhayward%2Fattiny88-hvpp%2Ftree%2Fmain%2Fkicad)
+to see that wiring in particular. Connect to the purple pi's USB Serial port -
+it will emit some help on start, and then commands can be issued.
 
 ## Commands
 
