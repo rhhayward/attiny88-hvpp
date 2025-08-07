@@ -58,12 +58,25 @@ start.  Once it announces done, you can start issuing commands.
 ```
 READSIG
 ```
+```
 * SIGNATURE: 0x1E,0x93,0x11 IDENT: ATTINY88 
+```
+```
 READFUS
+```
+```
 * FUSE l=0x37 h=0xDF x=0xFF LOCK 0xFF
+```
+```
 READCAL
+```
+```
 * calibration byte: 0x9D
+```
+```
 READFLA 0x0000 0x0010
+```
+```
 * start=0x0000 end=0x0010
 * 0x0000   13c0 22c0 21c0 20c0 1fc0 1ec0 1dc0 1cc0  1bc0 1ac0 19c0 18c0 17c0 16c0 74c0 14c0
 ```
