@@ -25,10 +25,10 @@ help on start, and then commands can be issued.
 
 ## Commands
 
-* READSIG - read and display signature bytes
-* READCAL - read and display calibration byte
-* READFUS - read and display fuse and lock bytes
-* READFLA 0x<start> 0x<end> - read and display flash from start to end
-* WRITEFUS 0x<low> 0x<high> 0x<extended> - write low high and extended
+* `READSIG` - read and display signature bytes
+* `READCAL` - read and display calibration byte
+* `READFUS` - read and display fuse and lock bytes
+* `READFLA 0x<START> 0x<END>` - read and display flash from start to end
+* `WRITEFUS 0x<low> 0x<high> 0x<extended>` - write low high and extended
   fuses, then read and display fuse and lock bytes
 
