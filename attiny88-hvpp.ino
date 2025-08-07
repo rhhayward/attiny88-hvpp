@@ -3,22 +3,25 @@
  *
  *  Created on: 6 Aug 2025
  *      Author: Ryan Hayward
- * 
- * This program implements  HVPP programming protocol from the ATTINY88 
- *   datasheet. The pins defined were tested on a Purple Pi rp2040 and a 
+ *
+ * This program implements  HVPP programming protocol from the ATTINY88
+ *   datasheet. The pins defined were tested on a Purple Pi rp2040 and a
  *   12v boost converter. Both the VCC_PIN and RST_PIN connect to the base
- *   of an NPN transistor (BC547), the emitter of which goes to ground 
- *   through a 2k2 resistor.  The collector is hooked to the gate of an 
+ *   of an NPN transistor (BC547), the emitter of which goes to ground
+ *   through a 2k2 resistor.  The collector is hooked to the gate of an
  *   P-Channel mosfet (IRLML6402).  They have 5v and 12v directly to their
  *   source as well as through a 220k resistor to the source to hold it
  *   high.  The drain is hooked to the ATTINY88's VCC and RST pins.
  *   Otherwise, all the pins hook directly to the ATTINY88.  The pin
- *   setup was chosen to try and make PCB design simpler.
+ *   setup was chosen to try and make PCB design simpler.  The only other
+ *   component used when testing was a 1u capacitor from 5v to GND to smooth
+ *   any noise, but that is likely unnecessary.
  *
- * Usage: Write this to a purple pi, wire it up as discussed above,
- *   run it with an ATTINY88 connected up.  The problem will write
- *   some help to the Serial output, and take commands to execute.  Those
- *   which are currently supported are:
+ * Usage: Write this to a purple pi, wire it up as discussed above, and
+ *   run it with an ATTINY88 connected up.  The program will emit some help to
+ *   the Serial output, and take commands to execute.  Those which are
+ *   currently supported are:
+ *
  *   * READSIG - read and display signature bytes
  *   * READCAL - read and display calibration byte
  *   * READFUS - read and display fuse and lock bytes
@@ -173,7 +176,7 @@ void writeDataPins(uint8_t data) {
 // read data from data pins
 uint8_t readDataPins() {
   uint8_t result = 0;
-  
+
   // Set data pins as inputs
   pinMode(D0_PIN, INPUT);
   pinMode(D1_PIN, INPUT);
@@ -183,7 +186,7 @@ uint8_t readDataPins() {
   pinMode(D5_PIN, INPUT);
   pinMode(D6_PIN, INPUT);
   pinMode(D7_PIN, INPUT);
-  
+
   // Read each pin and shift it to the correct bit position
   result |= (digitalRead(D0_PIN) & 0x01) << 0;
   result |= (digitalRead(D1_PIN) & 0x01) << 1;
@@ -193,7 +196,7 @@ uint8_t readDataPins() {
   result |= (digitalRead(D5_PIN) & 0x01) << 5;
   result |= (digitalRead(D6_PIN) & 0x01) << 6;
   result |= (digitalRead(D7_PIN) & 0x01) << 7;
-  
+
   return result;
 }
 
@@ -457,7 +460,7 @@ void writeExtendedFuse(uint8_t fuse_val) {
   digitalWrite(BS2_PIN, LOW);
 }
 
-// extract from String s a hex value from start for len characters - 
+// extract from String s a hex value from start for len characters -
 //   returns a long, can be cast to smaller lengths
 long getHexVal(String s, uint8_t start, uint8_t len) {
   // String to substr into
@@ -465,8 +468,8 @@ long getHexVal(String s, uint8_t start, uint8_t len) {
   // char array so that we can use strtoul
   char hexChars[len+1];
 
-  
-  hex = s.substring(start, start+len); 
+
+  hex = s.substring(start, start+len);
   hex.toCharArray(hexChars, len+1);
   return strtoul(hexChars, NULL, 16); // 16 defines hex
 }
