@@ -6,19 +6,21 @@ expect them to work.  You have been warned.
 
 ### ATTINY88 High Voltage Parallel Programmer
 
-This project came from a bricked attiny88. I had changed the fuses, and after
+This project came from a bricked attiny88. I was changing the fuses, and after
 one particular update, none of the methods to program or update fuses worked.
-The programmer was unable to read the signature or fuses. However, the code
-was still working, albeit terribly slowly - an LED which normally blinked once
-per second was taking minutes to blink. While ATTINY88 microcontrollers are
-inexpensive and could easily be replaced, I took it as a challenge to unbrick
-this one. Reading the datasheet and online, a high voltage parallel programmer
-was what was needed, but I couldn't find code or a schematic, so I created my
-own.
+The programmer was unable even to read the signature or fuses. However, the code
+was still working, albeit terribly slowly. An LED which previously blinked once
+per second was taking minutes to complete a blink cycle. While ATTINY88
+microcontrollers are inexpensive and could easily be replaced, I took it as a
+challenge to unbrick this one. Reading the datasheet and online, a high voltage
+parallel programmer was what was needed, but I couldn't find code or a
+schematic, so I worked to get this working.
 
-This was tested with a purple pi (off-brand), a boost converter to provide 12,
-and an attiny88. I was able to use the write flash command to unbrick the
-device.
+This was validated working with a purple pi (off-brand rp2040), a boost
+regulator, and the aforementioned bricked ATTINY88. I was then able to use the
+WRITEFUS  command to unbrick the device.  I implemented a few additional
+commands as well.  The entire suite of commands is not yet available, but
+should be doable leveraging the primitives that are already implemented.
 
 ### How to use
 
