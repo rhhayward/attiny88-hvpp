@@ -525,7 +525,7 @@ void loop() {
   } else if(cmd.equalsIgnoreCase("READCAL")) {
     // read and display calibration byte
     readCalibrationByte();
-    Serial.printf("* calibration byte: 0x%02X\n", calibration_byte);
+    Serial.printf("* CALIBRATION BYTE: 0x%02X\n", calibration_byte);
   } else if(cmd.equalsIgnoreCase("READFUS")) {
     // read and display fuse and lock bits
     readFuseAndLockBits();
