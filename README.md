@@ -1,3 +1,9 @@
+### Important
+
+The code has been tested on a breadboard.  However, the schematic and PCB
+have not been validated.  If you order PCBs based on this, you should not
+expect them to work.  You have been warned.
+
 ### ATTINY88 High Voltage Parallel Programmer
 
 This project came from a bricked attiny88. I had changed the fuses, and after
