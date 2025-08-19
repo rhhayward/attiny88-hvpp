@@ -2,8 +2,8 @@
 
 The code has been tested on a breadboard, and the original pcb has been
 validated to work.  There were two changes made since ordering: 1. The
-attiny88 footprint was not wide enough, so it was widened.  2. The 12v
-source had left and right reversed - the pcb now has that fixed.  
+attiny88 footprint was not wide enough, so it was widened in REV002.
+2. The 12v source had left and right reversed - that is fixed in REV003.
 
 Caveat emptor:  If you order PCBs from this, be prepared for them not
 to work.  You have been warned.
@@ -18,27 +18,28 @@ per second was taking minutes to complete a blink cycle. While ATTINY88
 microcontrollers are inexpensive and could easily be replaced, I took it as a
 challenge to unbrick this one. Reading the datasheet and online, a high voltage
 parallel programmer was what was needed, but I couldn't find code or a
-schematic, so I worked to get this working.
+schematic, so I worked to get a hvpp programmer working.
 
-This was validated working with a purple pi (off-brand rp2040), a boost
+This was validated working with a purple pi (off-brand rp2040), a 12v boost
 regulator, and the aforementioned bricked ATTINY88. I was then able to use the
-WRITEFUS  command to unbrick the device.  I implemented a few additional
-commands as well.  The entire suite of commands is not yet available, but
-should be doable leveraging the primitives that are already implemented.
+`WRITEFUS` command to unbrick the device.  I implemented a few additional
+commands as well.  The entire suite of possible commands is not yet available,
+but should be doable leveraging the primitives that are already implemented.
 
-### How to use
+### How to
 
-The wiring is explained in the .ino file. The only special wiring is that the
-5v to the ATTINY88's VCC and the 12v to the RST pin are switched using a
-mosfet. Aside from those, wiring is direct from the purple pi to the ATTINY88.
-You can see the wiring in the `/kicad/attiny88-hvpp.kicad_sch` schematic
+The wiring is laid out in the .ino file. The only additional circuitry is that
+the 5v providing the ATTINY88's VCC and the 12v necessary for the RST pin are
+switched using a transistor+mosfet. All other wiring is direct from the purple
+pi to the ATTINY88.  You can see the full schematic in
+`/kicad/attiny88-hvpp.kicad_sch`
 (https://kicanvas.org/?github=https%3A%2F%2Fgithub.com%2Frhhayward%2Fattiny88-hvpp%2Ftree%2Fmain%2Fkicad).
 
-Once wired, build and push the code to the purple pi. I have tested this using
-the Arduino IDE 2 with the Raspberry Pi Pico profile which worked for me with no
-trouble. With the code running, connect to the purple pi's USB Serial port.
-The code will always prefix its output with a `*`.  It will emit some help on
-start.  Once it announces done, you can start issuing commands.
+Once wired, you canbuild and push the code to the purple pi. I have tested this
+using the Arduino IDE 2 with the Raspberry Pi Pico profile which worked for me
+with no trouble. With the code running, connect to the purple pi's USB Serial
+port.  The code will always prefix its output with a `*`.  It will emit some
+help on start.  Once it announces done, you can start issuing commands.
 
 ## Commands
 
@@ -50,8 +51,6 @@ start.  Once it announces done, you can start issuing commands.
   fuses, then read and display fuse and lock bytes
 
 ## Example execution
-
-
 
 ```
 * starting up
@@ -71,7 +70,7 @@ start.  Once it announces done, you can start issuing commands.
 READSIG
 ```
 ```
-* SIGNATURE: 0x1E,0x93,0x11 IDENT: ATTINY88 
+* SIGNATURE: 0x1E,0x93,0x11 IDENT: ATTINY88
 ```
 ```
 READFUS
