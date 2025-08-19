@@ -1273,7 +1273,7 @@
 
   (gr_rect (start 72.39 49.022) (end 149.352 107.696)
     (stroke (width 0.05) (type default)) (fill none) (layer "Edge.Cuts") (tstamp f586de2b-7246-4e3f-9248-5da25c7eb8f7))
-  (gr_text "ATTINY88 HVPP\nREV002\n2025-08-06" (at 145.542 103.886) (layer "B.SilkS") (tstamp 58cc0187-bb16-4fe6-aa6e-96b5ac61618a)
+  (gr_text "ATTINY88 HVPP\nREV003\n2025-08-19" (at 145.542 103.886) (layer "B.SilkS") (tstamp 58cc0187-bb16-4fe6-aa6e-96b5ac61618a)
     (effects (font (size 1.5 1.5) (thickness 0.3) bold) (justify left bottom mirror))
   )
   (gr_text "2" (at 73.914 58.42) (layer "F.SilkS") (tstamp 0240bfab-ca63-484b-ba0e-fe51df862315)
