@@ -1,8 +1,12 @@
 ### Important
 
-The code has been tested on a breadboard.  However, the schematic and PCB
-have not been validated.  If you order PCBs based on this, you should not
-expect them to work.  You have been warned.
+The code has been tested on a breadboard, and the original pcb has been
+validated to work.  There were two changes made since ordering: 1. The
+attiny88 footprint was not wide enough, so it was widened.  2. The 12v
+source had left and right reversed - the pcb now has that fixed.  
+
+Caveat emptor:  If you order PCBs from this, be prepared for them not
+to work.  You have been warned.
 
 ### ATTINY88 High Voltage Parallel Programmer
 
