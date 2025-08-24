@@ -26,8 +26,10 @@
  *   * READCAL - read and display calibration byte
  *   * READFUS - read and display fuse and lock bytes
  *   * READFLA 0x<start> 0x<end> - read and display flash from start to end
+ *   * READROM 0x<START> 0x<END> - read and display EEPROM from start to end
  *   * WRITEFUS 0x<low> 0x<high> 0x<extended> - write low high and extended
  *       fuses, then read and display fuse and lock bytes
+ *   * CHIPERASE - perform chip erase - flash and eeprom (depending on EESAVE)
  *
  * TODO:  These features are not yet implemented:
  *   * chip erase
@@ -356,6 +358,27 @@ void readCalibrationByte() {
   digitalWrite(OE_PIN, HIGH);
 }
 
+void chipErase() {
+  // XA1=1 ; XA0=0 ; BS1=0
+  digitalWrite(XA1_PIN, HIGH);
+  digitalWrite(XA0_PIN, LOW);
+  digitalWrite(BS1_PIN, LOW);
+
+  // load command for chip erase
+  loadCommand(0b10000000);
+
+  // pulse cliki to load the command
+  pulseClockPin();
+
+  // pulse write pin low
+  pulseWritePin();
+
+  // wait for ready busy to go high
+  do { delay(100); } while(readReadyBusy() == 0);
+
+
+}
+
 // read location from flash
 uint16_t readFlash(uint16_t loc) {
   // break 16 bit loc into high and low bytes
@@ -389,6 +412,29 @@ uint16_t readFlash(uint16_t loc) {
   return value;
 }
 
+// read location from flash
+uint8_t readEeprom(uint16_t loc) {
+  // break 16 bit loc into high and low bytes
+  uint8_t low = loc & 0x00ff;
+  uint8_t high = (loc & 0xff00) >> 8;
+  // load the command to read eeprom
+  loadCommand(0b00000011);
+
+  // load high and low bytes of address
+  loadAddressHighByte(high);
+  loadAddressLowByte(low);
+
+  // OE=0 ; BS1=0 makes byte available on DATA
+  digitalWrite(OE_PIN, LOW);
+  digitalWrite(BS1_PIN, LOW);
+  uint8_t value = readDataPins();
+
+  // OE=1 to clear read
+  digitalWrite(OE_PIN, HIGH);
+
+  return value;
+}
+
 // read the RDYBSY pin - single value
 uint8_t readReadyBusy() {
   uint8_t readyBusy = digitalRead(RDYBSY_PIN);
@@ -404,12 +450,16 @@ void writeLowFuse(uint8_t fuse_val) {
   loadDataLowByte(fuse_val);
 
   // pulse WR low
+  pulseWritePin();
+
+  // wait for RDYBSY to go HIGH
+  do { delay(100); } while(readReadyBusy() == 0);
+}
+
+void pulseWritePin() {
   digitalWrite(WR_PIN, LOW);
   delayMicroseconds(20);
   digitalWrite(WR_PIN, HIGH);
-
-  // wait for RDYBSY to go HIGH
-  while(readReadyBusy() == 0) delay(100);
 }
 
 // write high fuse value
@@ -425,9 +475,7 @@ void writeHighFuse(uint8_t fuse_val) {
   digitalWrite(BS2_PIN, LOW);
 
   // pulse WR low
-  digitalWrite(WR_PIN, LOW);
-  delayMicroseconds(20);
-  digitalWrite(WR_PIN, HIGH);
+  pulseWritePin();
 
   // wait for RDYBSY to go HIGH
   do { delay(100); } while(readReadyBusy() == 0);
@@ -449,12 +497,10 @@ void writeExtendedFuse(uint8_t fuse_val) {
   digitalWrite(BS2_PIN, HIGH);
 
   // pulse WR low
-  digitalWrite(WR_PIN, LOW);
-  delayMicroseconds(20);
-  digitalWrite(WR_PIN, HIGH);
+  pulseWritePin();
 
   // wait for RDYBSY to go HIGH
-  while(readReadyBusy() == 0) delay(100);
+  do { delay(100); } while(readReadyBusy() == 0);
 
   // reset BS2
   digitalWrite(BS2_PIN, LOW);
@@ -502,8 +548,10 @@ void setup() {
   Serial.println("* READFUS - read fuses and lock bytes");
 
   Serial.println("* READFLA 0x<START> 0x<END> - read flash from START to END.  Each must be 4 hex digits.");
+  Serial.println("* READROM 0x<START> 0x<END> - read EEPROM from START to END.  Each must be 4 hex digits.");
   Serial.println("* WRITEFUS 0x<LOW> 0x<HIGH> 0x<EXTENDED> - write LOW HIGH and EXTENDED fuses.  Each must be 2 hex digits.");
 
+  Serial.println("* CHIPERASE - Perform Chip Erase, clearing flash and EEPROM (depending on EESAVE fuse).");
 
   Serial.println("* * * ready");
 }
@@ -562,5 +610,29 @@ void loop() {
     Serial.printf("* DONE WRITING FUSES.  READING FUSES...\n");
     readFuseAndLockBits();
     Serial.printf("* FUSE l=0x%02X h=0x%02X x=0x%02X LOCK 0x%02X\n", lfuse, hfuse, efuse, lock);
+  } else if(cmd.startsWith("READROM 0x") && cmd.length() == 21) {
+    // read and display eeprom bytes - notice special handling of customer provided
+    //   arguments - read from start to end
+    uint16_t start = (uint16_t)getHexVal(cmd, 10, 4);
+    uint16_t end = (uint16_t)getHexVal(cmd, 17, 4);
+
+    Serial.printf("* start=0x%04x end=0x%04x\n", start, end);
+    for(uint16_t i=0;i<(end-start);i++) {
+      uint8_t byte = readEeprom(start+i);
+      // print address every 16 bytes
+      if((i%16)==0) Serial.printf("* 0x%04x  ", (start+i));
+      // print each byte
+      Serial.printf(" %02x", byte);
+      // print an extra space half way through
+      if((i%16)==7) Serial.printf(" ");
+      // print a newline every last of 16 bytes
+      if((i%16)==15) Serial.printf("\n");
+    }
+    Serial.println(); // may write an extra line - that's okay by me
+  } else if(cmd.startsWith("CHIPERASE") && cmd.length() == 9) {
+    Serial.printf("* PERFORMING CHIP ERASE\n");
+    chipErase();
+    Serial.printf("* DONE PERFORMING CHIP ERASE\n");
+
   }
 }
