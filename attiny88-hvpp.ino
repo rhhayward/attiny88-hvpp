@@ -25,16 +25,17 @@
  *   * READSIG - read and display signature bytes
  *   * READCAL - read and display calibration byte
  *   * READFUS - read and display fuse and lock bytes
- *   * READFLA 0x<start> 0x<end> - read and display flash from start to end
- *   * READROM 0x<START> 0x<END> - read and display EEPROM from start to end
+ *   * READFLA 0x<START> 0x<END> - read and display flash from START to END
+ *   * READROM 0x<START> 0x<END> - read and display EEPROM from START to END
  *   * WRITEFUS 0x<low> 0x<high> 0x<extended> - write low high and extended
  *       fuses, then read and display fuse and lock bytes
  *   * CHIPERASE - perform chip erase - flash and eeprom (depending on EESAVE)
+ *   * LOADDATA 0x<START> <DATA> - load DATA into buffer starting at START
+ *   * SHOWDATA 0x<START> 0x<END> - read and display buffer from START to END
+ *   * WRITEFLA - write data from buffer to flash - will erase chip as CHIPERASE
  *
  * TODO:  These features are not yet implemented:
- *   * chip erase
- *   * write flash
- *   * read and write eeprom
+ *   * write eeprom
 */
 
 #define SERIAL_SPEED 9600
@@ -506,6 +507,91 @@ void writeExtendedFuse(uint8_t fuse_val) {
   digitalWrite(BS2_PIN, LOW);
 }
 
+void writeFlash(int len, uint16_t *bytes) {
+
+  // Before writing flash, we must do a chip erase
+  chipErase();
+
+  // A) Load Command "Write Flash"
+  // XA1=1 ; XA0=0 ; BS1=0 ; load command 0b00010000 ; pulse clock
+  digitalWrite(XA1_PIN, HIGH);
+  digitalWrite(XA0_PIN, LOW);
+  digitalWrite(BS1_PIN, LOW);
+  loadCommand(0b00010000);
+  pulseClockPin();
+
+  for(uint8_t i=0;i<=len/32;i++) {
+    uint8_t addr_high_byte = 0;
+    for(int pos=i*32;pos<len && pos<i*32+32;pos++) {
+
+      // extract data and address
+      uint8_t data_low_byte = (bytes[pos] & 0xff00) >> 8;
+      uint8_t data_high_byte = bytes[pos] & 0x00ff;
+
+      uint8_t addr_low_byte = pos & 0x00ff;
+      addr_high_byte = (pos & 0xff00) >> 8;
+
+      Serial.printf(" * writing byte pos=%d, addr=%02X%02X, data=%02X%02X\n",
+          pos,
+          addr_high_byte, addr_low_byte,
+          data_high_byte, data_low_byte);
+
+      // B) Load Address Low Byte
+      // XA1=0 ; XA0=0 ; BS1=0 ; DATA = addr_low_byte ; pulse clock
+      digitalWrite(XA1_PIN, LOW);
+      digitalWrite(XA0_PIN, LOW);
+      digitalWrite(BS1_PIN, LOW);
+      writeDataPins(addr_low_byte);
+      pulseClockPin();
+
+      // C) Load Data Low Byte
+      // XA1=0 ; XA0=1 ; DATA = data_low_byte ; pulse clock
+      digitalWrite(XA1_PIN, LOW);
+      digitalWrite(XA0_PIN, HIGH);
+      writeDataPins(data_low_byte);
+      pulseClockPin();
+
+      // D) Load Data High Byte
+      // BS1=1 ; XA1=0 ; XA0=1 ; DATA = data_high_byte ; pulse clock
+      digitalWrite(BS1_PIN, HIGH);
+      digitalWrite(XA1_PIN, LOW);
+      digitalWrite(XA0_PIN, HIGH);
+      writeDataPins(data_high_byte);
+      pulseClockPin();
+
+      // E) Latch Data
+      // BS1=1 ; pulse PAGEL high
+      digitalWrite(BS1_PIN, HIGH);
+      digitalWrite(PAGEL_PIN, HIGH);
+      delayMicroseconds(1);
+      digitalWrite(PAGEL_PIN, LOW);
+      delayMicroseconds(1);
+    } // F) Repeat for a page or until done
+
+    // G) Load Address High Byte
+    // XA1=0 ; XA0=0 ; BS1=1 ; DATA = addr_high_byte ; pulse clock
+    digitalWrite(XA1_PIN, LOW);
+    digitalWrite(XA0_PIN, LOW);
+    digitalWrite(BS1_PIN, HIGH);
+    writeDataPins(addr_high_byte);
+    pulseClockPin();
+
+    // H) Program Page
+    // pulse WR low ; wait for RDYBSY to go HIGH
+    Serial.printf(" * clocking in page\n");
+    pulseWritePin();
+    do { delay(100); } while(readReadyBusy() == 0);
+  } // I) Repeat until done
+
+  // J) End Page Programming
+  // XA1=1 ; XA0=0 ; load command 0b00000000 ; pulse clock
+  Serial.printf(" * NOP to complete programming\n");
+  digitalWrite(XA1_PIN, HIGH);
+  digitalWrite(XA0_PIN, LOW);
+  loadCommand(0b00000000);
+  pulseClockPin();
+}
+
 // extract from String s a hex value from start for len characters -
 //   returns a long, can be cast to smaller lengths
 long getHexVal(String s, uint8_t start, uint8_t len) {
@@ -552,12 +638,20 @@ void setup() {
   Serial.println("* WRITEFUS 0x<LOW> 0x<HIGH> 0x<EXTENDED> - write LOW HIGH and EXTENDED fuses.  Each must be 2 hex digits.");
 
   Serial.println("* CHIPERASE - Perform Chip Erase, clearing flash and EEPROM (depending on EESAVE fuse).");
+  Serial.println("* LOADDATA 0x<START> <DATA> - load DATA into buffer starting at START.");
+  Serial.println("* SHOWDATA 0x<START> 0x<END> - read and display buffer from START to END");
+  Serial.println("* WRITEFLA - write data from buffer to flash - will erase chip as CHIPERASE");
 
   Serial.println("* * * ready");
 }
 
 // variable to hold cmd user enters
 String cmd;
+
+// bytes and size to populate flash
+uint16_t num_bytes = 0;
+uint16_t bytes[0x2000] = {0xff};
+
 // loop forever expecting user input
 void loop() {
 
@@ -584,7 +678,7 @@ void loop() {
     uint16_t start = (uint16_t)getHexVal(cmd, 10, 4);
     uint16_t end = (uint16_t)getHexVal(cmd, 17, 4);
 
-    Serial.printf("* start=0x%04x end=0x%04x\n", start, end);
+    Serial.printf("* START=0x%04x END=0x%04x\n", start, end);
     for(uint16_t i=0;i<(end-start);i++) {
       uint16_t byte = readFlash(start+i);
       // print address every 16 bytes
@@ -597,6 +691,44 @@ void loop() {
       if((i%16)==15) Serial.printf("\n");
     }
     Serial.println(); // may write an extra line - that's okay by me
+  } else if(cmd.startsWith("WRITEFLA") && cmd.length() == 8) {
+    Serial.printf("* WRITING FLASH\n");
+
+    // write bytes to flash
+    writeFlash(num_bytes, bytes);
+
+    Serial.printf("* DONE WRITING FLASH\n");
+  } else if(cmd.startsWith("SHOWDATA 0x") && cmd.length() ==22 ) {
+    // read and display stored flash bytes - notice special handling of customer provided
+    //   arguments - read from start to end
+    uint16_t start = (uint16_t)getHexVal(cmd, 11, 4);
+    uint16_t end = (uint16_t)getHexVal(cmd, 18, 4);
+
+    Serial.printf("* START=0x%04x END=0x%04x NUMBYTES=%d\n", start, end, num_bytes);
+    for(uint16_t i=start;i<end;i++) {
+      // print address every 16 bytes
+      if((i%16)==0) Serial.printf("* 0x%04x  ", i);
+      // print each byte
+      Serial.printf(" %04x", bytes[i]);
+      // print an extra space half way through
+      if((i%16)==7) Serial.printf(" ");
+      // print a newline every last of 16 bytes
+      if((i%16)==15) Serial.printf("\n");
+    }
+    Serial.println(); // may write an extra line - that's okay by me
+  } else if(cmd.startsWith("LOADDATA 0x") && cmd.length() > 11) {
+    Serial.printf("* LOADING DATA\n");
+    uint16_t offset = (uint16_t)getHexVal(cmd, 11, 4);
+
+    // extract bytes from cmd
+    for(int i=0;i<(cmd.length()-16)/4;i++) {
+      int pos = i*4+16;
+      bytes[i+offset] = (uint16_t)getHexVal(cmd, pos, 4);
+      if(num_bytes < (i+offset+1)) num_bytes = (i+offset+1);
+      Serial.printf("* bytes[%d]=0x%04x\n", i+offset, bytes[i+offset]);
+    }
+
+    Serial.printf("* DONE LOADING DATA\n");
   } else if(cmd.startsWith("WRITEFUS 0x") && cmd.length() == 23) {
     // write fuse bytes, then read and display fuse and lock bits to show what happenedu
     uint8_t l = (uint8_t)getHexVal(cmd, 11, 2);
